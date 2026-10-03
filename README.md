@@ -30,6 +30,17 @@ npm start                 # then press a / i / w, or scan the QR code
 
 Scripts: `npm run typecheck`, `npm run lint`, `npm run android|ios|web`.
 
+App screens (`src/hb/`) follow the HomeBuild design prototype. Sign in with
+`98111 25521` (Homeowner) or `98765 43210` (Site Supervisor); the OTP step is a
+demo (tap a box to autofill). Auth, data and sync are in-memory for now, not yet
+wired to Firebase or Supabase.
+
+- `App.tsx` — router over the screen map; `store.tsx` — app state and actions
+- `auth.tsx` — splash, sign in / register, OTP, role pick
+- `customer.tsx` — Home, Design, Build, Finance, Schedule, milestones, notifications, profile
+- `supervisor.tsx` — Home, Tasks, Updates, Profile, 3-step daily update wizard, offline queue
+- `shell.tsx` / `ui.tsx` / `theme.ts` — header and tab bar, shared components, light/dark palettes
+
 Key modules:
 
 - `src/lib/env.ts` — reads `EXPO_PUBLIC_*` config, with `isFirebaseConfigured()` / `isSupabaseConfigured()` helpers
