@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
-import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Animated, Pressable, View } from 'react-native';
 
 import { ACTION_ITEMS, DOCS, PLANS, ROOMS, SPEND, TIMELINE, WORK_STATUS } from './data';
 import { useApp } from './store';
@@ -24,14 +24,64 @@ function Stat({ label, value, sub, color }: { label: string; value: string; sub?
   );
 }
 
+const HUB_NODES = [
+  { label: 'DESIGN', icon: 'edit-2', color: '#1D6FE0', route: 'cDesign', top: 0.09, left: 0.5 },
+  { label: 'BUILD', icon: 'tool', color: '#0B9A63', route: 'cBuild', top: 0.5, left: 0.84 },
+  { label: 'FINANCE', icon: 'credit-card', color: '#D97706', route: 'cFinance', top: 0.91, left: 0.5 },
+  { label: 'SCHEDULE', icon: 'calendar', color: '#7C3AED', route: 'cSchedule', top: 0.5, left: 0.16 },
+] as const;
+
+function RadialHub() {
+  const { go, dark } = useApp();
+  const [width, setWidth] = useState(0);
+  const [pulse] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(pulse, { toValue: 1, duration: 3400, useNativeDriver: true }),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+  const glowOpacity = pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.35, 0.08, 0.35] });
+  const glowScale = pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.18, 1] });
+  const ring = dark ? '#2A303B' : '#E3E8F0';
+  const HEIGHT = 290;
+  const circle = (size: number) => ({
+    position: 'absolute' as const, width: size, height: size, borderRadius: size / 2,
+    left: width / 2 - size / 2, top: HEIGHT / 2 - size / 2,
+  });
+  return (
+    <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)} style={{ height: HEIGHT, marginVertical: 2 }}>
+      {width > 0 && (
+        <>
+          <View style={[circle(250), { borderWidth: 1, borderColor: ring }]} />
+          <View style={[circle(196), { borderWidth: 1, borderColor: dark ? '#222833' : '#E9EDF4' }]} />
+          <Animated.View style={[circle(150), { backgroundColor: 'rgba(29,111,224,0.2)', opacity: glowOpacity, transform: [{ scale: glowScale }] }]} />
+          <View style={[circle(104), { backgroundColor: '#1565D8', alignItems: 'center', justifyContent: 'center', shadowColor: '#0B57D0', shadowOpacity: 0.5, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 8 }]}>
+            <T style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11.5, fontWeight: '500' }}>STATUS</T>
+            <T style={{ color: '#fff', fontSize: 16, fontWeight: '700', marginTop: 1 }}>On Track</T>
+          </View>
+          {HUB_NODES.map((n) => (
+            <Pressable
+              key={n.label}
+              accessibilityRole="button"
+              accessibilityLabel={n.label}
+              onPress={() => go(n.route)}
+              style={{ position: 'absolute', width: 100, alignItems: 'center', gap: 7, left: width * n.left - 50, top: HEIGHT * n.top - 36 }}>
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: dark ? '#181C23' : '#fff', borderWidth: 1, borderColor: dark ? '#272D38' : '#EAEEF5', alignItems: 'center', justifyContent: 'center', shadowColor: '#101828', shadowOpacity: 0.16, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 3 }}>
+                <Feather name={n.icon} size={21} color={n.color} />
+              </View>
+              <T style={{ fontSize: 11.5, fontWeight: '700', letterSpacing: 1.6 }}>{n.label}</T>
+            </Pressable>
+          ))}
+        </>
+      )}
+    </View>
+  );
+}
+
 export function CustomerHome() {
   const { go, theme } = useApp();
-  const hub = [
-    { label: 'DESIGN', icon: 'edit-2' as const, color: '#1D6FE0', route: 'cDesign' as const },
-    { label: 'BUILD', icon: 'tool' as const, color: '#0B9A63', route: 'cBuild' as const },
-    { label: 'FINANCE', icon: 'credit-card' as const, color: '#D97706', route: 'cFinance' as const },
-    { label: 'SCHEDULE', icon: 'calendar' as const, color: '#7C3AED', route: 'cSchedule' as const },
-  ];
   const milestones = [
     { title: 'Foundation', sub: 'Completed Nov 12', dot: '#0B9A63', icon: 'check' as const, active: false },
     { title: 'Slab Work', sub: 'Current Phase - 45%', dot: '#0B57D0', icon: 'tool' as const, active: true },
@@ -40,37 +90,23 @@ export function CustomerHome() {
   return (
     <>
       <View>
-        <Row gap={6}><View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#0B9A63' }} /><Kicker>ACTIVE PROJECT</Kicker></Row>
-        <T style={{ fontSize: 26, fontWeight: '800', marginTop: 6 }}>Sharma Residence</T>
+        <Row gap={6}><View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#0B9A63' }} /><T style={{ fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: palette.greenBright }}>ACTIVE PROJECT</T></Row>
+        <T style={{ fontSize: 31, fontWeight: '700', letterSpacing: -0.8, marginTop: 8 }}>Sharma Residence</T>
         <Row gap={6} style={{ marginTop: 4 }}><Icon name="map-pin" size={14} color={theme.sub} /><T style={{ color: theme.sub }}>Sector 45, Gurgaon, India</T></Row>
       </View>
 
       <Card>
         <Row style={{ justifyContent: 'space-between' }}>
-          <T style={{ fontWeight: '700', color: palette.primary }}>PLOT HB-9921</T>
-          <Badge label="PREMIUM" bg={theme.tintAmber} color={palette.amber} />
+          <T style={{ fontWeight: '600', letterSpacing: 0.4, fontSize: 14.5 }}>PLOT HB-9921</T>
+          <Badge label="PREMIUM" bg={theme.tintBlue} color={palette.primary} />
         </Row>
         <Row gap={32} style={{ marginTop: 14 }}>
-          <View><Kicker>AREA</Kicker><T style={{ fontSize: 22, fontWeight: '800', marginTop: 4 }}>3,200 <T style={{ fontSize: 13, color: theme.sub }}>sqft</T></T></View>
-          <View><Kicker>STRUCTURE</Kicker><T style={{ fontSize: 22, fontWeight: '800', marginTop: 4 }}>G+2</T></View>
+          <View><Kicker>AREA</Kicker><T style={{ fontSize: 19, fontWeight: '600', marginTop: 4, color: palette.blue }}>3,200 <T style={{ fontSize: 12, fontWeight: '500', color: theme.sub }}>sqft</T></T></View>
+          <View><Kicker>STRUCTURE</Kicker><T style={{ fontSize: 19, fontWeight: '600', marginTop: 4, color: palette.blue }}>G+2</T></View>
         </Row>
       </Card>
 
-      <Card style={{ paddingVertical: 18 }}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-          {hub.map((n) => (
-            <Pressable key={n.label} accessibilityRole="button" onPress={() => go(n.route)} style={{ width: '47.8%', alignItems: 'center', gap: 8, padding: 14, borderRadius: 16, backgroundColor: theme.field }}>
-              <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: n.color, alignItems: 'center', justifyContent: 'center' }}>
-                <Feather name={n.icon} size={22} color="#fff" />
-              </View>
-              <T style={{ fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>{n.label}</T>
-            </Pressable>
-          ))}
-        </View>
-        <Row style={{ justifyContent: 'center', marginTop: 12 }} gap={8}>
-          <Kicker>STATUS</Kicker><T style={{ color: palette.green, fontWeight: '800' }}>On Track</T>
-        </Row>
-      </Card>
+      <RadialHub />
 
       <Card>
         <Kicker>PHASE MILESTONES</Kicker>
